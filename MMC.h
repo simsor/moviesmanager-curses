@@ -16,7 +16,10 @@
  */
 #include <iostream>
 #include <stdlib.h>
+
 #include <ncurses.h>
+#include <menu.h>
+
 #include <string>
 #include <vector>
 #include <fstream>
@@ -31,7 +34,6 @@ class MMC
 		void drawMainInterface();
 		void loadConfig();
 		void firstRun();
-		void printMenu(WINDOW*, vector<string>, int);
 		void playVideo(string);
 	
 	private:

@@ -92,22 +92,35 @@ void MMC::drawMainInterface()
 
 	} while (entry != NULL);
 
-	int highlight = 1;
-	int choice = 0;
 	int c;
-
-	int startx = 2;
-	int starty = 2;
-
+	int i;
+	ITEM **videos;
+	MENU *menuMovies;
+	ITEM *current_item;
 	WINDOW *menuWin;
 
-	menuWin = newwin(HEIGHT, WIDTH, starty, startx);
-	keypad(menuWin, TRUE);
+	videos = (ITEM**) calloc(m_videosList.size(), sizeof(ITEM*));
 
+	for (i=0; i < m_videosList.size(); i++)
+		videos[i] = new_item(m_videosList[i].c_str(), m_videosList[i].c_str());
+	videos[m_videosList.size()] = (ITEM*) NULL;
+
+	menuMovies = new_menu((ITEM**) videos);
+
+	keypad(stdscr, TRUE);
+
+	menuWin = newwin(WIDTH, HEIGHT, 2, 2);
+	box(menuWin, 0, 0);
+	set_menu_win(menuMovies, menuWin);
+	//set_menu_sub(menuMovies, menuWin);
+	set_menu_mark(menuMovies, "*");
+	keypad(menuWin, TRUE);	
+
+	post_menu(menuMovies);
+
+	wrefresh(menuWin);
 	refresh();
 
-	printMenu(menuWin, m_videosList, highlight);
-	
 	bool draw = true;
 	while (draw)
 	{
@@ -115,21 +128,15 @@ void MMC::drawMainInterface()
 		switch(c)
 		{
 			case KEY_UP:
-				if (highlight == 1)
-					highlight = m_videosList.size()-1;
-				else
-					highlight--;
+				menu_driver(menuMovies, REQ_UP_ITEM);
 				break;
 			case KEY_DOWN:
-				if (highlight == m_videosList.size()-1)
-					highlight = 1;
-				else
-					highlight++;
+				menu_driver(menuMovies, REQ_DOWN_ITEM);
 				break;
-			case 10:
+			/* case 10:
 				playVideo(m_videosList[highlight-1]);
-				break;
-			case 27:
+				break; */
+			case 27: // ESCAPE
 				draw = false;
 				break;
 
@@ -137,14 +144,24 @@ void MMC::drawMainInterface()
 				mvwprintw(menuWin,20,20,"%d",c);
 				break; */
 		}
-		printMenu(menuWin, m_videosList, highlight);
+		//printMenu(menuWin, m_videosList, highlight);
+		wrefresh(menuWin);
 	}
 
+	free_item(videos[0]);
+	free_item(videos[1]);
+	free_menu(menuMovies);
+	delwin(menuWin);
 	closedir(videos_dir);
 }
 
 void MMC::playVideo(string toBePlayed)
 {
+	WINDOW* playing_window = newwin(HEIGHT, WIDTH, 2, 2);
+	mvwprintw(playing_window, (HEIGHT)/2, (WIDTH)/2-20, "Video playing...");
+	
+	wrefresh(playing_window);
+
 	string fullPath = "";
 	int lastChar = m_videosPath.at( m_videosPath.size() - 1 );
 
@@ -155,6 +172,8 @@ void MMC::playVideo(string toBePlayed)
 
 	string cmd = "mplayer \"" + fullPath + "\" -fs -idx &> /dev/null";
 	system(cmd.c_str());
+
+	delwin(playing_window);
 }
 
 void MMC::firstRun()
@@ -174,35 +193,4 @@ void MMC::firstRun()
 	refresh();
 	
 	drawMainInterface();
-}
-
-void MMC::printMenu(WINDOW *menu_win, vector<string> menuList, int highlight)
-{
-	int x, y, i;
-	x = 2;
-	y = 2;
-	box(menu_win, 0, 0);
-	
-	if (has_colors() != FALSE)
-	{
-		start_color();
-		init_pair(1, COLOR_YELLOW, COLOR_BLACK);
-		wattron(menu_win, COLOR_PAIR(1)); 
-	}
-
-	for (i = 0; i < menuList.size() - 1; i++)
-	{
-		if (highlight == i + 1)
-		{
-			wattron(menu_win, A_REVERSE);
-			mvwprintw(menu_win, y, x, "%s", menuList[i].c_str());
-			wattroff(menu_win, A_REVERSE);
-		}
-		else
-			mvwprintw(menu_win, y, x, "%s", menuList[i].c_str());
-		y++;
-	}
-
-	if (has_colors() != FALSE)
-		wattroff(menu_win, COLOR_PAIR(1));
 }

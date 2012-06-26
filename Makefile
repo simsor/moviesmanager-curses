@@ -1,2 +1,2 @@
 all:
-	g++ *.cpp -o mmc -lncurses
+	g++ *.cpp -o mmc -lncurses -lmenu
