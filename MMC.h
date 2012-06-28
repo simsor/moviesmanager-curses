@@ -34,10 +34,13 @@ class MMC
 		void drawMainInterface();
 		void loadConfig();
 		void firstRun();
-		void playVideo(string);
+		void playVideo(const char*);
 	
 	private:
 		bool m_isFirstRun;
 		string m_videosPath;
 		vector<string> m_videosList;
+
+		short m_foreColor;
+		short m_backColor;
 };

@@ -29,7 +29,13 @@ MMC::MMC()
 	
 	box(stdscr,0,0);
 
+	m_foreColor = COLOR_YELLOW;
+	m_backColor = COLOR_BLACK; // Default colors, overriden by the config file
+
 	loadConfig();
+
+	if (has_colors() == TRUE)
+		start_color();
 
 	if (m_isFirstRun)
 		firstRun();
@@ -55,6 +61,15 @@ void MMC::loadConfig()
 			getline(config_file, current_line);
 			if (current_line == "[path]")
 				getline(config_file, m_videosPath);
+
+			else if (current_line == "[colors]"){
+				string curColor;
+				getline(config_file, curColor);
+				m_foreColor = atoi(curColor.c_str());
+
+				getline(config_file, curColor);
+				m_backColor = atoi(curColor.c_str());
+			}
 		}
 	}
 	else
@@ -96,7 +111,6 @@ void MMC::drawMainInterface()
 	int i;
 	ITEM **videos;
 	MENU *menuMovies;
-	ITEM *current_item;
 	WINDOW *menuWin;
 
 	videos = (ITEM**) calloc(m_videosList.size(), sizeof(ITEM*));
@@ -112,8 +126,14 @@ void MMC::drawMainInterface()
 	menuWin = newwin(WIDTH, HEIGHT, 2, 2);
 	box(menuWin, 0, 0);
 	set_menu_win(menuMovies, menuWin);
-	//set_menu_sub(menuMovies, menuWin);
+
 	set_menu_mark(menuMovies, "*");
+	set_menu_format(menuMovies, HEIGHT, 1);
+	init_pair(1, m_foreColor, m_backColor);
+
+	set_menu_fore(menuMovies, COLOR_PAIR(1) | A_REVERSE);
+	set_menu_back(menuMovies, COLOR_PAIR(1));
+
 	keypad(menuWin, TRUE);	
 
 	post_menu(menuMovies);
@@ -133,9 +153,11 @@ void MMC::drawMainInterface()
 			case KEY_DOWN:
 				menu_driver(menuMovies, REQ_DOWN_ITEM);
 				break;
-			/* case 10:
-				playVideo(m_videosList[highlight-1]);
-				break; */
+			case 10:
+				playVideo(item_name(current_item(menuMovies)));
+				refresh();
+				wrefresh(menuWin);
+				break;
 			case 27: // ESCAPE
 				draw = false;
 				break;
@@ -144,7 +166,6 @@ void MMC::drawMainInterface()
 				mvwprintw(menuWin,20,20,"%d",c);
 				break; */
 		}
-		//printMenu(menuWin, m_videosList, highlight);
 		wrefresh(menuWin);
 	}
 
@@ -155,7 +176,7 @@ void MMC::drawMainInterface()
 	closedir(videos_dir);
 }
 
-void MMC::playVideo(string toBePlayed)
+void MMC::playVideo(const char *toBePlayed)
 {
 	WINDOW* playing_window = newwin(HEIGHT, WIDTH, 2, 2);
 	mvwprintw(playing_window, (HEIGHT)/2, (WIDTH)/2-20, "Video playing...");
@@ -172,6 +193,9 @@ void MMC::playVideo(string toBePlayed)
 
 	string cmd = "mplayer \"" + fullPath + "\" -fs -idx &> /dev/null";
 	system(cmd.c_str());
+	
+	mvwprintw(playing_window, (HEIGHT)/2, (WIDTH)/2-20, "                  ");
+	wrefresh(playing_window);
 
 	delwin(playing_window);
 }
